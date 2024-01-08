@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.aspatel</groupId>
+  <artifactId>db</artifactId>
+  <version>${revision}</version>
+  <name>db</name>
+  <description>A minimal database implementation from scratch.</description>
+
+  <properties>
+    <java.version>17</java.version>
+    <!-- default value for 'version' for local builds -->
+    <revision>${git.tags}-${git.commit.id.describe}</revision>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.30</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>32.1.3-jre</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.13.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <version>5.0.0</version>
+        <configuration>
+          <generateGitPropertiesFile>true</generateGitPropertiesFile>
+          <generateGitPropertiesFilename>${project.build.directory}/git.properties</generateGitPropertiesFilename>
+        </configuration>
+        <executions>
+          <execution>
+            <id>get-the-git-infos</id>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- code formatter, used by the pre-commit hook plugin below this -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.40.0</version>
+        <configuration>
+          <pom>
+            <sortPom></sortPom>
+          </pom>
+          <java>
+            <googleJavaFormat>
+              <version>1.18.1</version>
+              <style>GOOGLE</style>
+              <reflowLongStrings>true</reflowLongStrings>
+            </googleJavaFormat>
+          </java>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- install pre-commit hooks during the initialize phase -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>copy-git-hooks</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>initialize</phase>
+            <inherited>false</inherited>
+            <configuration>
+              <target>
+                <copy failonerror="false" force="true" overwrite="true" todir="${basedir}/.git/hooks">
+                  <fileset dir="${basedir}/.githooks">
+                    <include name="pre-commit"></include>
+                  </fileset>
+                </copy>
+                <exec executable="bash" failifexecutionfails="false">
+                  <arg value="-c"></arg>
+                  <arg value="chmod 777 ${basedir}/.git/hooks/pre-commit"></arg>
+                </exec>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

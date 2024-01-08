@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Check code formatting
+        run: ./mvnw spotless:check
+
+      - name: Check commit messages
+        uses: wagoid/commitlint-github-action@v5
+
+      - name: Compile
+        run: ./mvnw compile
+
+      - name: Unit tests
+        run: ./mvnw test
+
+      - name: Package (feature branch)
+        run: ./mvnw package
+        if: github.ref != 'refs/heads/master'
+
+      # ------------------------------------------------------------------------------------
+      # for the master branch we will bump the semantic version
+      # and package the app using the new tag
+
+      - name: Bump version
+        if: github.ref == 'refs/heads/master'
+        id: semantic_version
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          create_annotated_tag: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package
+        run: ./mvnw package -Drevision=${{ steps.semantic_version.outputs.new_tag }}
+        if: github.ref == 'refs/heads/master'
+
+      # ------------------------------------------------------------------------------------
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db
+          path: target/*.jar
+          if-no-files-found: error
