@@ -12,7 +12,7 @@
     <java.version>17</java.version>
 
     <!-- default value for 'version' for local builds -->
-    <revision>${git.tags}-${git.commit.id.describe}</revision>
+    <revision>${git.commit.id.describe}</revision>
 
     <!-- fix platform independence warnings -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
